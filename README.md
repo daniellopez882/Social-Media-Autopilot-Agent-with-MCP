@@ -1,79 +1,82 @@
-# � SocialPilot: The Autonomous Media Engine
-> **Agentic social media management at scale. Powered by LangGraph & CrewAI.**
+# 🛸 SocialPilot: The Autonomous Media Engine
+> **Agentic social media orchestration at scale. Built for the era of AI-native brands.**
 
-SocialPilot is an enterprise-grade autonomous system designed to handle the entire lifecycle of social media marketing—from trend discovery to content creation, safety validation, and automated scheduling. 
+SocialPilot is an enterprise-grade autonomous system that handles the entire lifecycle of social media marketing—from trend discovery to platform-native content generation, safety validation, and automated scheduling. 
 
 ![SocialPilot Dashboard](socialpilot_dashboard_mockup_1772870940932.png)
 
-## 🌌 Core Value Prop
-Traditional social media management is slow, manual, and reactive. **SocialPilot** flips the script:
-- **Proactive Intelligence**: Detects trends *before* they peak.
-- **Brand Guardrails**: Autonomous safety checks prevent PR crises.
-- **Human-in-the-Loop**: Seamless approval workflow for sensitive content.
-- **Multi-Agent Orchestration**: Specialized agents for every task (X, LinkedIn, Meta).
+---
+
+## ⚡ The Future of Distribution
+Traditional social media management is manual, reactive, and fragmented. **SocialPilot** replaces the legacy workflow with a stateful, agentic engine that thinks like a CMO and executes like a Digital Native.
+
+- **Proactive Intelligence**: Detects emerging cultural signals *before* they peak.
+- **Brand Guardrails**: Autonomous ethics monitoring prevents PR crises in real-time.
+- **Human-in-the-loop**: A seamless approval architecture for critical content decisions.
+- **Compound Growth**: Cross-platform orchestration (X, LinkedIn, Meta) that learns from every interaction.
 
 ---
 
-## 🏗️ Neural Architecture
-SocialPilot uses a **StateGraph** orchestration layer to coordinate a "Crew" of specialist agents:
+## 🏗️ Technical Architecture
+SocialPilot leverages a **Stateful Graph** orchestration layer to coordinate a "Crew" of specialist agents across specific cognitive domains.
 
-| Agent | Purpose | Intelligence Level |
+### 🧠 The Specialists
+| Agent | Cognitive Domain | Intelligence Layer |
 | :--- | :--- | :--- |
-| **Orchestrator** | Master Supervisor & Router | Claude 3.5 Sonnet |
-| **TrendAnalyzer** | Cultural Signal Detection | GPT-4o (Pattern Recognition) |
-| **ContentGenerator** | Creative Copy & Visual Briefs | Claude 3.5 Sonnet |
-| **SafetyOfficer** | Ethics & Brand Guardrails | GPT-4 (Critical Analysis) |
-| **Accountant** | ROI & Growth Analytics | GPT-4o |
+| **Orchestrator** | Master Routing & Supervisor | Claude 3.5 Sonnet |
+| **TrendAnalyzer** | Pattern Recognition & Trend Spotting | GPT-4o |
+| **ContentGenerator** | Creative Writing & Visual Arts | Claude 3.5 Sonnet |
+| **SafetyOfficer** | Ethics, Risk & Compliance | GPT-4 |
+| **Accountant** | Growth Narrative & ROI Extraction | GPT-4o |
 
 ---
 
-## 🚀 Deployment Guide
+## 🚀 Ignition Sequence
 
-### 1. Environment Sync
+### 1. Synchronize Environment
 ```bash
 cp .env.example .env
-# Toggle MOCK_MODE=true for local dry-runs without API costs
+# Enable MOCK_MODE=true for rapid iteration without API costs.
 ```
 
-### 2. Ignition
-Start the dual-layer system (API + Dashboard):
+### 2. Launch Control Center
 
-**Backend (FastAPI)**:
+**Backend Runtime (FastAPI)**:
 ```bash
-uvicorn app.main:app --reload
+py -m uvicorn app.main:app --reload
 ```
 
-**Control Center (Dashboard)**:
+**Intelligence Dashboard (Glassmorphism UI)**:
 ```bash
-python run_dashboard.py
+py run_dashboard.py
 ```
 
 ---
 
-## 📡 Protocol Interface (API)
+## 📡 The Protocol (API)
 
 ### `POST /client/profile`
-Synchronize a brand's DNA including voice, audience, and safety constraints.
+Synchronize a brand's DNA including tonality, audience psychographics, and safety constraints.
 
 ### `POST /run`
-Execute an autonomous cycle. Current support for:
-- `campaign`: Full E2E flow (Trend -> Content -> Guardrails -> Schedule).
-- `engagement`: Real-time DM and comment response loop.
-- `analytics`: Performance narrative generation.
+Trigger an autonomous cycle. Current mission types supported:
+- `campaign`: Full E2E flow (Trend Detection → Content Creation → Safety Check → Scheduling).
+- `engagement`: Autonomous DM and comment response loop with sentiment classification.
+- `analytics`: Performance narrative generation and "Stop/Start" recommendations.
 
 ### `POST /approve/{id}`
-The human bypass. Authorize content flagged by the SafetyOfficer for immediate publishing.
+The human bypass. Immediate authorization of high-priority content flagged for review.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Stack
 - **Orchestration**: `langgraph`
-- **Agent Logic**: `crewai`
-- **API Runtime**: `fastapi` + `uvicorn`
-- **Frontend**: Glassmorphism HTML5/JS Command Center
-- **Models**: OpenAI GPT-4o, Anthropic Claude 3.5
+- **Agent Framework**: `crewai`
+- **API Engine**: `fastapi`
+- **Frontend**: Autonomous Glassmorphism Command Center
+- **Intelligence**: OpenAI GPT-4o + Anthropic Claude 3.5
 
 ---
 
-**Developed by**: Ismail Sajid — Agentic AI Engineer  
+**Architected by**: Ismail Sajid — Agentic AI Engineer  
 *"Autonomy without compromise."*
