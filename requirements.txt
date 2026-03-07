@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+langgraph
+crewai
+langchain
+pydantic
+python-dotenv
+httpx
+sqlalchemy
+langchain-openai
+langchain-anthropic

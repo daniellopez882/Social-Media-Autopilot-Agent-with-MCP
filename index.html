@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialPilot | Autonomous Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            --secondary: #06b6d4;
+            --accent: #f43f5e;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            background: rgba(10, 10, 15, 0.8);
+            border-right: 1px solid var(--card-border);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        nav ul { list-style: none; }
+        nav li {
+            padding: 0.75rem 0;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        nav li.active, nav li:hover { color: var(--text); }
+
+        .agent-status {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem 3rem;
+            background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.05), transparent);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+
+        .card:hover { border-color: rgba(255, 255, 255, 0.2); transform: translateY(-5px); }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .trend-up { color: #10b981; font-size: 0.8rem; }
+
+        /* Pending List */
+        .pending-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .pending-item:last-child { border-bottom: none; }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            background: rgba(6, 182, 212, 0.2);
+            color: var(--secondary);
+        }
+
+        /* Glass Form */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #151520;
+            border: 1px solid var(--card-border);
+            width: 500px;
+            padding: 2.5rem;
+            border-radius: 24px;
+            position: relative;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 1rem;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+
+        .glow-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside>
+            <div class="logo">SocialPilot.</div>
+            <nav>
+                <ul>
+                    <li class="active">Dashboard</li>
+                    <li>Brand Profiles</li>
+                    <li>Analytics</li>
+                    <li>Settings</li>
+                </ul>
+            </nav>
+            <div class="agent-status">
+                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">Orchestrator Status</p>
+                <p><span class="status-dot"></span> Active</p>
+            </div>
+        </aside>
+
+        <main>
+            <header>
+                <div>
+                    <h1 style="font-size: 2rem;">Autonomous Dashboard</h1>
+                    <p style="color: var(--text-muted);">Welcome back, Commander.</p>
+                </div>
+                <button class="btn" onclick="openModal()">New Campaign</button>
+            </header>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">Weekly Growth <span class="trend-up">+12.4%</span></div>
+                    <div class="stat">14.2K</div>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">Total Accounts Reached</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Active Trends <span class="badge">Live</span></div>
+                    <div id="trends-list" style="margin-top: 10px;">
+                        <p style="font-size: 0.9rem;">#AIAutomation <span style="color:var(--secondary)">8.4k</span></p>
+                        <p style="font-size: 0.9rem; margin-top:5px;">#FutureOfWork <span style="color:var(--secondary)">12k</span></p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Agent Thinking...</div>
+                    <div id="logs" style="font-size: 0.8rem; color: #10b981; font-family: monospace;">
+                        > Scanning Twitter trends...<br>
+                        > Identifying content pillars...<br>
+                        > Ready for instructions.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-title">Pending Approvals <span id="approval-count" class="badge">0</span></div>
+                <div id="approvals-list">
+                    <p style="color: var(--text-muted); padding: 1rem; text-align: center;">All clear! No pending approvals.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="campaignModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem;">Launch New Campaign</h2>
+            <input type="text" id="clientId" placeholder="Client ID (e.g. nex_01)">
+            <select id="taskType">
+                <option value="campaign">Full Campaign Flow</option>
+                <option value="content">Content Only</option>
+                <option value="engagement">Engagement Loop</option>
+                <option value="analytics">Analytics Report</option>
+            </select>
+            <button class="btn" style="width: 100%;" onclick="startCampaign()">Execute Agent Loop</button>
+            <button class="btn" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--card-border);" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+
+        function openModal() { document.getElementById('campaignModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('campaignModal').style.display = 'none'; }
+
+        async function startCampaign() {
+            const clientId = document.getElementById('clientId').value;
+            const taskType = document.getElementById('taskType').value;
+            
+            if(!clientId) return alert("Please enter Client ID");
+
+            closeModal();
+            addLog(`Triggering ${taskType} for ${clientId}...`);
+
+            try {
+                const response = await fetch(`${API_BASE}/run`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: clientId, task_type: taskType })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'awaiting_approval') {
+                    addPendingApproval(data);
+                } else {
+                    addLog(`Success: ${data.task_type} completed.`);
+                }
+            } catch (err) {
+                addLog(`Error: ${err.message}`);
+            }
+        }
+
+        function addLog(msg) {
+            const logBox = document.getElementById('logs');
+            logBox.innerHTML += `<br>> ${msg}`;
+        }
+
+        function addPendingApproval(data) {
+            const list = document.getElementById('approvals-list');
+            if (list.innerHTML.includes('All clear')) list.innerHTML = '';
+            
+            const div = document.createElement('div');
+            div.className = 'pending-item';
+            div.id = `approval-${data.approval_id}`;
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <strong>${data.reason}</strong><br>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">PLATFORM: ${data.content ? 'Instagram/X' : 'Detecting...'}</span>
+                    </div>
+                    <div>
+                        <button class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.7rem; background: var(--secondary)" onclick="approve('${data.approval_id}')">Approve</button>
+                        <button class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.7rem; background: var(--accent)" onclick="reject('${data.approval_id}')">Reject</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(div);
+            updateCount(1);
+        }
+
+        async function approve(id) {
+            const response = await fetch(`${API_BASE}/approve/${id}`, { method: 'POST' });
+            if (response.ok) {
+                document.getElementById(`approval-${id}`).remove();
+                addLog(`Approval ${id} sent to scheduler.`);
+                updateCount(-1);
+            }
+        }
+
+        async function reject(id) {
+            await fetch(`${API_BASE}/reject/${id}`, { method: 'POST' });
+            document.getElementById(`approval-${id}`).remove();
+            addLog(`Approval ${id} rejected.`);
+            updateCount(-1);
+        }
+
+        function updateCount(delta) {
+            const badge = document.getElementById('approval-count');
+            let count = parseInt(badge.innerText) + delta;
+            badge.innerText = count;
+        }
+    </script>
+</body>
+</html>
