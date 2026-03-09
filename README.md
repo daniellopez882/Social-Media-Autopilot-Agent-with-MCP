@@ -78,5 +78,5 @@ The human bypass. Immediate authorization of high-priority content flagged for r
 
 ---
 
-**Architected by**: Ismail Sajid — Agentic AI Engineer  
+**Architected by**: Daniel Lopez — Agentic AI Engineer  
 *"Autonomy without compromise."*
