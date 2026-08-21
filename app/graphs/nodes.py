@@ -47,6 +47,7 @@ def content_generator_node(state: SocialState) -> Dict[str, Any]:
         }
     
     factory = AgentFactory(state["brand_profile"].model_dump())
+    agent = factory.create_content_generator()
     
     task = Task(
         description=f"Generate social media content based on the following trend data: {state.get('trend_data')}. Target platforms: {', '.join(state['brand_profile'].active_platforms)}.",
@@ -57,7 +58,7 @@ def content_generator_node(state: SocialState) -> Dict[str, Any]:
     crew = Crew(agents=[agent], tasks=[task], verbose=True)
     result = crew.kickoff()
     
-    return {"generated_content": result, "next_step": "campaign_scheduler"}
+    return {"generated_content": result, "next_step": "guardrails"}
 
 def campaign_scheduler_node(state: SocialState) -> Dict[str, Any]:
     if MOCK_MODE:
@@ -67,6 +68,7 @@ def campaign_scheduler_node(state: SocialState) -> Dict[str, Any]:
         }
     
     factory = AgentFactory(state["brand_profile"].model_dump())
+    agent = factory.create_campaign_scheduler()
     agent.tools = get_all_tools()
     
     task = Task(

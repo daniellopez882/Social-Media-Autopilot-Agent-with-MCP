@@ -1,3 +1,4 @@
+import os
 import logging
 import json
 from datetime import datetime
@@ -32,5 +33,3 @@ def save_result_to_file(client_id: str, result_type: str, data: Dict[str, Any]):
         json.dump(data, f, indent=4)
     
     logger.info(f"Result saved to {filename}")
-
-import os
