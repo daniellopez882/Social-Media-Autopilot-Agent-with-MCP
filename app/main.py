@@ -1,10 +1,20 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from app.schemas.state import BrandProfile, SocialState
 from app.graphs.orchestrator import create_social_pilot_graph
 
 app = FastAPI(title="MCP Social Media Autopilot API")
+
+# Enable CORS for dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # In-memory stores
 BRAND_DB = {}

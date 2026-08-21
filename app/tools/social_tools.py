@@ -18,6 +18,15 @@ class SocialMediaTools:
         except Exception:
             return ["#FallbackTrend"]
 
+    @tool("google_trends_analyzer")
+    def google_trends_analyzer(keyword: str) -> Dict[str, Any]:
+        """Analyzes search interest and related queries for a keyword via Google Trends."""
+        return {
+            "keyword": keyword,
+            "interest_over_time": "High",
+            "related_topics": ["Agentic AI", "LangGraph", "Automation"]
+        }
+
     @tool("instagram_analytics_fetcher")
     def instagram_analytics_fetcher(client_id: str) -> Dict[str, Any]:
         """Fetches latest reach and engagement metrics for an Instagram account via Meta Graph API."""

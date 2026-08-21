@@ -1,6 +1,6 @@
 import os
-from typing import Dict, Any
-from app.schemas.state import SocialState
+from typing import Dict, Any, Tuple, List
+from app.schemas.state import SocialState, BrandProfile
 from app.agents.factory import AgentFactory
 from app.tools.social_tools import get_all_tools
 
@@ -11,6 +11,20 @@ try:
 except ImportError:
     MOCK_MODE = True
 
+def _extract_brand_info(state: SocialState) -> Tuple[Dict[str, Any], str, List[str], List[str], List[str]]:
+    brand = state.get("brand_profile")
+    if isinstance(brand, BrandProfile):
+        return brand.model_dump(), brand.brand_name, brand.content_pillars, brand.active_platforms, brand.banned_topics
+    elif isinstance(brand, dict):
+        return (
+            brand,
+            brand.get("brand_name", "Brand"),
+            brand.get("content_pillars", []),
+            brand.get("active_platforms", []),
+            brand.get("banned_topics", [])
+        )
+    return {}, "Brand", [], [], []
+
 def trend_analyzer_node(state: SocialState) -> Dict[str, Any]:
     if MOCK_MODE:
         return {
@@ -18,12 +32,13 @@ def trend_analyzer_node(state: SocialState) -> Dict[str, Any]:
             "next_step": "content_generator"
         }
     
-    factory = AgentFactory(state["brand_profile"].model_dump())
+    brand_dict, brand_name, content_pillars, _, _ = _extract_brand_info(state)
+    factory = AgentFactory(brand_dict)
     agent = factory.create_trend_analyzer()
     agent.tools = get_all_tools()
     
     task = Task(
-        description=f"Analyze current trends for {state['brand_profile'].brand_name} in the industry focusing on {', '.join(state['brand_profile'].content_pillars)}.",
+        description=f"Analyze current trends for {brand_name} in the industry focusing on {', '.join(content_pillars)}.",
         expected_output="A structured JSON report of top 3 trends with content angles as per TREND_ANALYZER_PROMPT.",
         agent=agent
     )
@@ -34,22 +49,23 @@ def trend_analyzer_node(state: SocialState) -> Dict[str, Any]:
     return {"trend_data": result, "next_step": "content_generator"}
 
 def content_generator_node(state: SocialState) -> Dict[str, Any]:
+    brand_dict, _, _, active_platforms, banned_topics = _extract_brand_info(state)
     if MOCK_MODE:
         content = "MOCK CONTENT: 1. Post about AI. 2. Post about Social Automation."
         # Inject trigger if brand has banned topics for testing flow
-        brand = state.get("brand_profile")
-        if brand and brand.banned_topics:
-            content += f" (Note: We mention {brand.banned_topics[0]} for testing purposes)"
+        if banned_topics:
+            content += f" (Note: We mention {banned_topics[0]} for testing purposes)"
             
         return {
             "generated_content": content,
             "next_step": "guardrails"
         }
     
-    factory = AgentFactory(state["brand_profile"].model_dump())
+    factory = AgentFactory(brand_dict)
+    agent = factory.create_content_generator()
     
     task = Task(
-        description=f"Generate social media content based on the following trend data: {state.get('trend_data')}. Target platforms: {', '.join(state['brand_profile'].active_platforms)}.",
+        description=f"Generate social media content based on the following trend data: {state.get('trend_data')}. Target platforms: {', '.join(active_platforms)}.",
         expected_output="A list of generated posts with hooks, captions, and visual briefs as per CONTENT_GENERATOR_PROMPT.",
         agent=agent
     )
@@ -57,7 +73,7 @@ def content_generator_node(state: SocialState) -> Dict[str, Any]:
     crew = Crew(agents=[agent], tasks=[task], verbose=True)
     result = crew.kickoff()
     
-    return {"generated_content": result, "next_step": "campaign_scheduler"}
+    return {"generated_content": result, "next_step": "guardrails"}
 
 def campaign_scheduler_node(state: SocialState) -> Dict[str, Any]:
     if MOCK_MODE:
@@ -66,7 +82,9 @@ def campaign_scheduler_node(state: SocialState) -> Dict[str, Any]:
             "next_step": "__end__"
         }
     
-    factory = AgentFactory(state["brand_profile"].model_dump())
+    brand_dict, _, _, _, _ = _extract_brand_info(state)
+    factory = AgentFactory(brand_dict)
+    agent = factory.create_campaign_scheduler()
     agent.tools = get_all_tools()
     
     task = Task(
@@ -86,7 +104,8 @@ def engagement_responder_node(state: SocialState) -> Dict[str, Any]:
             "messages": state.get("messages", []) + ["MOCK: Replied to 5 comments."],
             "next_step": "__end__"
         }
-    factory = AgentFactory(state["brand_profile"].model_dump())
+    brand_dict, _, _, _, _ = _extract_brand_info(state)
+    factory = AgentFactory(brand_dict)
     agent = factory.create_engagement_responder()
     agent.tools = get_all_tools()
     
@@ -113,7 +132,8 @@ def analytics_reporter_node(state: SocialState) -> Dict[str, Any]:
             "analytics_report": "MOCK REPORT: Reach up 20%, Engagement up 5%.",
             "next_step": "__end__"
         }
-    factory = AgentFactory(state["brand_profile"].model_dump())
+    brand_dict, _, _, _, _ = _extract_brand_info(state)
+    factory = AgentFactory(brand_dict)
     agent = factory.create_analytics_reporter()
     agent.tools = get_all_tools()
     
@@ -136,10 +156,8 @@ def analytics_reporter_node(state: SocialState) -> Dict[str, Any]:
 
 def guardrails_node(state: SocialState) -> Dict[str, Any]:
     """Ensures content follows brand safety and ethics guidelines."""
-    # Simulation: Even in mock mode, we want to test the approval flow
     content = state.get("generated_content", "") or ""
-    brand_profile = state.get("brand_profile")
-    banned = brand_profile.banned_topics if brand_profile else []
+    _, _, _, _, banned = _extract_brand_info(state)
     
     # Check for keywords
     triggered = []

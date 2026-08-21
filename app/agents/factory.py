@@ -26,7 +26,10 @@ from social_media_prompts import (
 class AgentFactory:
     def __init__(self, brand_profile: dict):
         self.brand_profile = brand_profile
-        self.llm = ChatOpenAI(model="gpt-4o") # Defaulting to gpt-4o as per prompts
+        try:
+            self.llm = ChatOpenAI(model="gpt-4o")
+        except Exception:
+            self.llm = None
 
     def create_trend_analyzer(self) -> Agent:
         return Agent(

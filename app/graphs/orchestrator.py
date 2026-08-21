@@ -61,7 +61,21 @@ def create_social_pilot_graph():
     # Add sequential edges for standard flows
     workflow.add_edge("trend_analyzer", "content_generator")
     workflow.add_edge("content_generator", "guardrails")
-    workflow.add_edge("guardrails", "campaign_scheduler")
+    
+    # Conditional edge from guardrails: stop at END if human approval is required
+    def check_guardrails_result(state: SocialState) -> str:
+        if state.get("requires_human_approval"):
+            return END
+        return "campaign_scheduler"
+
+    workflow.add_conditional_edges(
+        "guardrails",
+        check_guardrails_result,
+        {
+            "campaign_scheduler": "campaign_scheduler",
+            END: END
+        }
+    )
     workflow.add_edge("campaign_scheduler", END)
     
     workflow.add_edge("engagement_responder", END)

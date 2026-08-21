@@ -1,11 +1,9 @@
 import os
+from typing import List, Optional, TypedDict, Dict, Any, Union
 from dotenv import load_dotenv
-from typing import List, Optional
 from pydantic import BaseModel, Field
 
 load_dotenv()
-
-from typing import List, Optional, TypedDict, Dict, Any
 
 class BrandProfile(BaseModel):
     brand_name: str
@@ -18,9 +16,9 @@ class BrandProfile(BaseModel):
     primary_goal: str = "engagement"
     competitor_accounts: List[str] = Field(default_factory=list)
 
-class SocialState(TypedDict):
+class SocialState(TypedDict, total=False):
     client_id: str
-    brand_profile: BrandProfile
+    brand_profile: Union[BrandProfile, Dict[str, Any]]
     task_type: str
     messages: List[str]
     next_step: Optional[str]
