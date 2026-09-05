@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SocialPilot | Autonomous Control Center</title>
+    <title>SocialPilot</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -199,165 +199,320 @@
             70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
         }
+            .sidebar { display: flex; flex-direction: column; }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <aside>
+        <aside class="sidebar">
             <div class="logo">SocialPilot.</div>
-            <nav>
-                <ul>
-                    <li class="active">Dashboard</li>
-                    <li>Brand Profiles</li>
-                    <li>Analytics</li>
-                    <li>Settings</li>
-                </ul>
-            </nav>
             <div class="agent-status">
-                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">Orchestrator Status</p>
-                <p><span class="status-dot"></span> Active</p>
+                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">API</p>
+                <p><span class="status-dot" id="status-dot"></span> <span id="status-text">checking…</span></p>
+                <p id="mode-text" style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);"></p>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">API key</p>
+                <input type="password" id="apiKey" placeholder="X-API-Key" autocomplete="off"
+                       style="width: 100%;" oninput="saveKey()">
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem;">
+                    Kept in this tab only (sessionStorage).
+                </p>
             </div>
         </aside>
 
         <main>
             <header>
                 <div>
-                    <h1 style="font-size: 2rem;">Autonomous Dashboard</h1>
-                    <p style="color: var(--text-muted);">Welcome back, Commander.</p>
+                    <h1 style="font-size: 2rem;">Dashboard</h1>
+                    <p style="color: var(--text-muted);" id="subtitle">Every number on this page comes from the API.</p>
                 </div>
-                <button class="btn" onclick="openModal()">New Campaign</button>
+                <div>
+                    <button class="btn" onclick="openModal('profileModal')">Register profile</button>
+                    <button class="btn" onclick="openModal('runModal')">Run task</button>
+                </div>
             </header>
 
             <div class="grid">
                 <div class="card">
-                    <div class="card-title">Weekly Growth <span class="trend-up">+12.4%</span></div>
-                    <div class="stat">14.2K</div>
-                    <p style="color: var(--text-muted); font-size: 0.8rem;">Total Accounts Reached</p>
-                </div>
-                <div class="card">
-                    <div class="card-title">Active Trends <span class="badge">Live</span></div>
-                    <div id="trends-list" style="margin-top: 10px;">
-                        <p style="font-size: 0.9rem;">#AIAutomation <span style="color:var(--secondary)">8.4k</span></p>
-                        <p style="font-size: 0.9rem; margin-top:5px;">#FutureOfWork <span style="color:var(--secondary)">12k</span></p>
+                    <div class="card-title">Readiness</div>
+                    <div id="ready-list" style="font-size: 0.9rem; margin-top: 10px;">
+                        <p style="color: var(--text-muted);">Loading…</p>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title">Agent Thinking...</div>
-                    <div id="logs" style="font-size: 0.8rem; color: #10b981; font-family: monospace;">
-                        > Scanning Twitter trends...<br>
-                        > Identifying content pillars...<br>
-                        > Ready for instructions.
+                    <div class="card-title">Registered profiles <span class="badge" id="profile-count">0</span></div>
+                    <div id="profiles-list" style="font-size: 0.9rem; margin-top: 10px;">
+                        <p style="color: var(--text-muted);">None yet.</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Activity</div>
+                    <div id="logs" style="font-size: 0.8rem; color: #10b981; font-family: monospace; max-height: 240px; overflow-y: auto;">
+                        &gt; Ready.
                     </div>
                 </div>
             </div>
 
             <div class="card" style="margin-top: 1.5rem;">
-                <div class="card-title">Pending Approvals <span id="approval-count" class="badge">0</span></div>
+                <div class="card-title">Pending approvals <span id="approval-count" class="badge">0</span></div>
                 <div id="approvals-list">
-                    <p style="color: var(--text-muted); padding: 1rem; text-align: center;">All clear! No pending approvals.</p>
+                    <p style="color: var(--text-muted); padding: 1rem; text-align: center;">No pending approvals.</p>
                 </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-title">Last result</div>
+                <pre id="last-result" style="font-size: 0.75rem; white-space: pre-wrap; word-break: break-word; color: var(--text-muted); margin-top: 10px;">—</pre>
             </div>
         </main>
     </div>
 
-    <!-- Modal -->
-    <div id="campaignModal" class="modal">
+    <div id="profileModal" class="modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 1.5rem;">Launch New Campaign</h2>
-            <input type="text" id="clientId" placeholder="Client ID (e.g. nex_01)">
+            <h2 style="margin-bottom: 1.5rem;">Register a brand profile</h2>
+            <input type="text" id="p-clientId" placeholder="Client ID (letters, digits, _ or -)">
+            <input type="text" id="p-brandName" placeholder="Brand name">
+            <input type="text" id="p-audience" placeholder="Target audience">
+            <input type="text" id="p-pillars" placeholder="Content pillars, comma-separated">
+            <input type="text" id="p-platforms" placeholder="Active platforms, comma-separated (e.g. linkedin, twitter)">
+            <input type="text" id="p-banned" placeholder="Banned topics, comma-separated">
+            <button class="btn" style="width: 100%;" onclick="registerProfile()">Save profile</button>
+            <button class="btn" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--card-border);" onclick="closeModal('profileModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="runModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 1.5rem;">Run a task</h2>
+            <input type="text" id="clientId" placeholder="Client ID of a registered profile">
             <select id="taskType">
-                <option value="campaign">Full Campaign Flow</option>
-                <option value="content">Content Only</option>
-                <option value="engagement">Engagement Loop</option>
-                <option value="analytics">Analytics Report</option>
+                <option value="campaign">campaign — trends → content → guardrails → schedule</option>
+                <option value="content">content — content → guardrails → schedule</option>
+                <option value="engagement">engagement</option>
+                <option value="analytics">analytics</option>
             </select>
-            <button class="btn" style="width: 100%;" onclick="startCampaign()">Execute Agent Loop</button>
-            <button class="btn" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--card-border);" onclick="closeModal()">Cancel</button>
+            <button class="btn" style="width: 100%;" onclick="runTask()">Run</button>
+            <button class="btn" style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--card-border);" onclick="closeModal('runModal')">Cancel</button>
         </div>
     </div>
 
     <script>
-        const API_BASE = "http://127.0.0.1:8000";
+        // Same origin: the API serves this page, so no CORS wildcard is needed.
+        const API_BASE = "";
 
-        function openModal() { document.getElementById('campaignModal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('campaignModal').style.display = 'none'; }
+        const KEY_STORAGE = "socialpilot.apiKey";
 
-        async function startCampaign() {
-            const clientId = document.getElementById('clientId').value;
-            const taskType = document.getElementById('taskType').value;
-            
-            if(!clientId) return alert("Please enter Client ID");
-
-            closeModal();
-            addLog(`Triggering ${taskType} for ${clientId}...`);
-
+        function loadKey() {
             try {
-                const response = await fetch(`${API_BASE}/run`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ client_id: clientId, task_type: taskType })
-                });
-                const data = await response.json();
-                
-                if (data.status === 'awaiting_approval') {
-                    addPendingApproval(data);
-                } else {
-                    addLog(`Success: ${data.task_type} completed.`);
+                const saved = sessionStorage.getItem(KEY_STORAGE);
+                if (saved) document.getElementById("apiKey").value = saved;
+            } catch (e) { /* storage unavailable: the field still works for this page load */ }
+        }
+        function saveKey() {
+            try { sessionStorage.setItem(KEY_STORAGE, document.getElementById("apiKey").value); } catch (e) {}
+            refreshProfiles();
+            refreshApprovals();
+        }
+        function headers(json) {
+            const h = { "X-API-Key": document.getElementById("apiKey").value };
+            if (json) h["Content-Type"] = "application/json";
+            return h;
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = "flex"; }
+        function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+        function addLog(msg) {
+            const box = document.getElementById("logs");
+            const line = document.createElement("div");
+            line.textContent = "> " + msg;
+            box.appendChild(line);
+            box.scrollTop = box.scrollHeight;
+        }
+        function showResult(obj) {
+            document.getElementById("last-result").textContent = JSON.stringify(obj, null, 2);
+        }
+        function csv(id) {
+            return document.getElementById(id).value.split(",").map(s => s.trim()).filter(Boolean);
+        }
+
+        async function call(method, path, body) {
+            const resp = await fetch(API_BASE + path, {
+                method,
+                headers: headers(body !== undefined),
+                body: body === undefined ? undefined : JSON.stringify(body),
+            });
+            let data = null;
+            try { data = await resp.json(); } catch (e) { data = { detail: "non-JSON response" }; }
+            if (!resp.ok) {
+                const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+                throw new Error(resp.status + " " + detail);
+            }
+            return data;
+        }
+
+        // ---- status --------------------------------------------------------
+
+        async function refreshStatus() {
+            const dot = document.getElementById("status-dot");
+            const text = document.getElementById("status-text");
+            const mode = document.getElementById("mode-text");
+            try {
+                const health = await call("GET", "/health");
+                text.textContent = "online";
+                dot.style.background = "#10b981";
+                mode.textContent = (health.mock_mode ? "MOCK MODE — nothing is published" : "live mode")
+                    + " · " + health.environment;
+            } catch (e) {
+                text.textContent = "unreachable";
+                dot.style.background = "#ef4444";
+                mode.textContent = "";
+            }
+            try {
+                const ready = await call("GET", "/ready");
+                const list = document.getElementById("ready-list");
+                list.innerHTML = "";
+                for (const [name, check] of Object.entries(ready.checks || {})) {
+                    const p = document.createElement("p");
+                    p.textContent = (check.ok ? "✓ " : "✗ ") + name + (check.detail ? " — " + check.detail : "");
+                    p.style.color = check.ok ? "var(--text)" : "#f59e0b";
+                    list.appendChild(p);
                 }
-            } catch (err) {
-                addLog(`Error: ${err.message}`);
+            } catch (e) {
+                document.getElementById("ready-list").innerHTML =
+                    '<p style="color:#ef4444">' + esc(e.message) + "</p>";
             }
         }
 
-        function addLog(msg) {
-            const logBox = document.getElementById('logs');
-            logBox.innerHTML += `<br>> ${msg}`;
+        // ---- profiles ------------------------------------------------------
+
+        async function refreshProfiles() {
+            try {
+                const data = await call("GET", "/client/profiles");
+                const list = document.getElementById("profiles-list");
+                const ids = data.client_ids || [];
+                document.getElementById("profile-count").textContent = ids.length;
+                list.innerHTML = ids.length
+                    ? ids.map(id => "<p>" + esc(id) + "</p>").join("")
+                    : '<p style="color: var(--text-muted);">None yet.</p>';
+            } catch (e) {
+                // 401 before a key is entered is expected; say so quietly.
+                document.getElementById("profiles-list").innerHTML =
+                    '<p style="color: var(--text-muted);">' + esc(e.message) + "</p>";
+            }
         }
 
-        function addPendingApproval(data) {
-            const list = document.getElementById('approvals-list');
-            if (list.innerHTML.includes('All clear')) list.innerHTML = '';
-            
-            const div = document.createElement('div');
-            div.className = 'pending-item';
-            div.id = `approval-${data.approval_id}`;
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between;">
-                    <div>
-                        <strong>${data.reason}</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--text-muted)">PLATFORM: ${data.content ? 'Instagram/X' : 'Detecting...'}</span>
-                    </div>
-                    <div>
-                        <button class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.7rem; background: var(--secondary)" onclick="approve('${data.approval_id}')">Approve</button>
-                        <button class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.7rem; background: var(--accent)" onclick="reject('${data.approval_id}')">Reject</button>
-                    </div>
-                </div>
-            `;
-            list.appendChild(div);
-            updateCount(1);
+        async function registerProfile() {
+            const clientId = document.getElementById("p-clientId").value.trim();
+            if (!clientId) return alert("Client ID is required");
+            const profile = {
+                brand_name: document.getElementById("p-brandName").value.trim(),
+                target_audience: document.getElementById("p-audience").value.trim(),
+                content_pillars: csv("p-pillars"),
+                active_platforms: csv("p-platforms"),
+                banned_topics: csv("p-banned"),
+            };
+            try {
+                const data = await call("POST", "/client/profile/" + encodeURIComponent(clientId), profile);
+                closeModal("profileModal");
+                addLog("Profile saved: " + data.client_id);
+                refreshProfiles();
+            } catch (e) {
+                addLog("Profile not saved: " + e.message);
+            }
+        }
+
+        // ---- runs and approvals -------------------------------------------
+
+        async function runTask() {
+            const clientId = document.getElementById("clientId").value.trim();
+            const taskType = document.getElementById("taskType").value;
+            if (!clientId) return alert("Client ID is required");
+            closeModal("runModal");
+            addLog("Running " + taskType + " for " + clientId + "…");
+            try {
+                const data = await call("POST", "/run", { client_id: clientId, task_type: taskType });
+                showResult(data);
+                if (data.status === "awaiting_approval") {
+                    addLog("Guardrails held it for review: " + data.reason);
+                    refreshApprovals();
+                } else {
+                    addLog("Finished: " + taskType + " (" + (data.status || "completed") + ")");
+                }
+            } catch (e) {
+                addLog("Run failed: " + e.message);
+            }
+        }
+
+        async function refreshApprovals() {
+            const list = document.getElementById("approvals-list");
+            let items = [];
+            try {
+                const data = await call("GET", "/approvals");
+                items = data.approvals || [];
+            } catch (e) {
+                list.innerHTML = '<p style="color: var(--text-muted); padding: 1rem; text-align: center;">'
+                    + esc(e.message) + "</p>";
+                return;
+            }
+            document.getElementById("approval-count").textContent = items.length;
+            if (!items.length) {
+                list.innerHTML = '<p style="color: var(--text-muted); padding: 1rem; text-align: center;">No pending approvals.</p>';
+                return;
+            }
+            list.innerHTML = "";
+            for (const item of items) {
+                const div = document.createElement("div");
+                div.className = "pending-item";
+                div.id = "approval-" + item.approval_id;
+                div.innerHTML =
+                    '<div style="display:flex; justify-content:space-between; gap:1rem;">' +
+                    "<div><strong>" + esc(item.reason) + "</strong><br>" +
+                    '<span style="font-size:0.8rem; color:var(--text-muted)">client ' + esc(item.client_id) +
+                    " · " + esc(item.created_at) + "</span>" +
+                    '<pre style="font-size:0.75rem; white-space:pre-wrap; margin-top:0.5rem;">' + esc(item.content || "") + "</pre></div>" +
+                    "<div>" +
+                    '<button class="btn" style="padding:0.4rem 0.8rem; font-size:0.7rem; background:var(--secondary)" onclick="approve(\'' + esc(item.approval_id) + '\')">Approve</button> ' +
+                    '<button class="btn" style="padding:0.4rem 0.8rem; font-size:0.7rem; background:var(--accent)" onclick="reject(\'' + esc(item.approval_id) + '\')">Reject</button>' +
+                    "</div></div>";
+                list.appendChild(div);
+            }
         }
 
         async function approve(id) {
-            const response = await fetch(`${API_BASE}/approve/${id}`, { method: 'POST' });
-            if (response.ok) {
-                document.getElementById(`approval-${id}`).remove();
-                addLog(`Approval ${id} sent to scheduler.`);
-                updateCount(-1);
+            try {
+                const data = await call("POST", "/approve/" + encodeURIComponent(id));
+                showResult(data);
+                addLog("Approved " + id + ": " + (data.message || ""));
+            } catch (e) {
+                addLog("Approve failed: " + e.message);
             }
+            refreshApprovals();
         }
 
         async function reject(id) {
-            await fetch(`${API_BASE}/reject/${id}`, { method: 'POST' });
-            document.getElementById(`approval-${id}`).remove();
-            addLog(`Approval ${id} rejected.`);
-            updateCount(-1);
+            const feedback = prompt("Reason for rejecting (optional):") || "Rejected by operator";
+            try {
+                const data = await call("POST", "/reject/" + encodeURIComponent(id), { feedback });
+                addLog("Rejected " + id + ": " + (data.message || ""));
+            } catch (e) {
+                addLog("Reject failed: " + e.message);
+            }
+            refreshApprovals();
         }
 
-        function updateCount(delta) {
-            const badge = document.getElementById('approval-count');
-            let count = parseInt(badge.innerText) + delta;
-            badge.innerText = count;
-        }
+        // ---- boot ----------------------------------------------------------
+
+        loadKey();
+        refreshStatus();
+        refreshProfiles();
+        refreshApprovals();
+        setInterval(refreshStatus, 30000);
+        setInterval(refreshApprovals, 15000);
     </script>
 </body>
 </html>
