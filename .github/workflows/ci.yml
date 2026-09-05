@@ -1,0 +1,171 @@
+name: CI
+
+# There was no pipeline. Three root-level test scripts existed, and they passed
+# only because the content node injects a banned topic "for testing purposes"
+# in mock mode -- test-only behaviour living in production code.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint and tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # crewai declares >=3.10,<3.14.
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check . --output-format=github
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Tests
+        env:
+          MOCK_MODE: "true"
+          API_KEY: ci-test-key-not-real
+        run: pytest -q
+
+      - name: Mock mode must be opt-in
+        # MOCK_MODE used to default to "true" and was read at import time: an
+        # operator who never set it ran a fake system and got "MOCK SCHEDULED"
+        # successes. If this ever prints True with the variable unset, that
+        # regression is back. (MOCK_MODE is not set at this step at all: an
+        # empty string is not a boolean, and app/config.py treats it as unset.)
+        run: |
+          value=$(env -u MOCK_MODE python -c "from app.config import settings; print(settings.MOCK_MODE)")
+          echo "MOCK_MODE unset -> $value"
+          [ "$value" = "False" ]
+
+      - name: Production refuses mock mode and a missing API key
+        env:
+          ENVIRONMENT: production
+          MOCK_MODE: "true"
+          API_KEY: ""
+        run: |
+          if python -m app.preflight; then
+            echo "::error::preflight passed a production config with MOCK_MODE on and no API key"
+            exit 1
+          fi
+          echo "preflight correctly refused"
+
+      - name: Boot the server and exercise the contract
+        env:
+          MOCK_MODE: "true"
+          API_KEY: ci-test-key-not-real
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+          set -x
+          curl -fsS http://127.0.0.1:8000/health | grep -q '"mock_mode":true'
+          curl -fsS http://127.0.0.1:8000/ | grep -q '<title>'
+          # state-changing routes require the key
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/run \
+                 -H 'Content-Type: application/json' -d '{"client_id":"x","task_type":"campaign"}')
+          [ "$code" = "401" ]
+          # an unknown task type is a validation error, not a silent no-op
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/run \
+                 -H 'X-API-Key: ci-test-key-not-real' -H 'Content-Type: application/json' \
+                 -d '{"client_id":"x","task_type":"nonsense"}')
+          [ "$code" = "422" ]
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Bandit
+        run: bandit -r app -ll -f screen
+
+      - name: pip-audit
+        run: pip-audit -r requirements.txt --strict
+        continue-on-error: true  # advisory feed availability, not a code defect
+
+      - name: No credential file may be tracked
+        run: |
+          tracked=$(git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.[^e]' || true)
+          if [ -n "$tracked" ]; then
+            echo "$tracked"
+            echo "::error::a credential file is committed"
+            exit 1
+          fi
+          echo "clean"
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  docker:
+    name: Container
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: docker build -t socialpilot:ci .
+
+      - name: The image must not run as root
+        run: |
+          uid=$(docker run --rm --entrypoint id socialpilot:ci -u)
+          [ "$uid" != "0" ] || { echo "::error::container runs as root"; exit 1; }
+          echo "runs as uid $uid"
+
+      - name: Production without an API key must not start
+        run: |
+          set +e
+          docker run --rm -e ENVIRONMENT=production -e API_KEY= -e MOCK_MODE=false socialpilot:ci
+          code=$?
+          set -e
+          [ "$code" != "0" ] || { echo "::error::container started with an invalid production config"; exit 1; }
+          echo "refused with exit $code"
+
+      - name: Serve in mock mode and answer /health and /ready
+        run: |
+          docker run -d --name sp -p 8000:8000 -e MOCK_MODE=true -e API_KEY=ci-test-key-not-real socialpilot:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health
+          curl -sS http://127.0.0.1:8000/ready
+          docker logs sp | tail -20
+          docker rm -f sp
