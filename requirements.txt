@@ -1,11 +1,18 @@
-fastapi
-uvicorn
-langgraph
-crewai
-langchain
-pydantic
-python-dotenv
-httpx
-sqlalchemy
-langchain-openai
-langchain-anthropic
+# Pinned to the versions this repository is tested against (Python 3.11-3.13;
+# crewai declares <3.14).
+#
+# The previous file had no version constraints. It also listed sqlalchemy and
+# langchain-anthropic, which nothing imported; both are gone. The README's
+# "Claude 3.5 Sonnet" architecture table described code that did not exist.
+
+fastapi==0.141.1
+uvicorn==0.52.4
+httpx==0.28.1
+
+langgraph==1.2.11
+langchain-core==1.6.2
+crewai==1.15.20
+
+pydantic==2.12.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
